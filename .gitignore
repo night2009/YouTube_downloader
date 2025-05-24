@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# VS Code
+.vscode/
+.env
+
+# Assets binaries
+assets/ffmpeg*
+assets/ffprobe*
+assets/*.exe
+
+# Logs
+logs/
+*.log
+
+# Mac
+.DS_Store
