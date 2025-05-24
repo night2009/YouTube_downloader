@@ -1,0 +1,52 @@
+name: Build All Platforms
+
+on:
+  push:
+    tags:
+      - 'v*'    # 發版 tag 才自動打包
+  workflow_dispatch:   # 也可手動觸發
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt pyinstaller
+
+    - name: Build executable with PyInstaller
+      run: |
+        if [ "$RUNNER_OS" == "Windows" ]; then
+          pyinstaller --noconfirm --onefile --add-data "assets;assets" --add-data "langs;langs" main.py
+        elif [ "$RUNNER_OS" == "Linux" ]; then
+          pyinstaller --noconfirm --onefile --add-data "assets:assets" --add-data "langs:langs" main.py
+        elif [ "$RUNNER_OS" == "macOS" ]; then
+          pyinstaller --noconfirm --onefile --add-data "assets:assets" --add-data "langs:langs" main.py
+        fi
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-${{ runner.os }}
+        path: dist/
+
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: dist/*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
