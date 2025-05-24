@@ -47,3 +47,4 @@ jobs:
       with:
         name: app-${{ runner.os }}
         path: dist/
+        if-no-files-found: error
