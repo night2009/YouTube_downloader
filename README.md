@@ -40,5 +40,6 @@ If auto download fails, please:
 
 ---
 
-**如要更多語言教學或遇到 ffmpeg 自動下載 bug，歡迎新增 issue !**
+**如要更多語言教學或遇到 ffmpeg 自動下載錯誤，歡迎新增 issue !**
+
 **For more language tutorials or if you encounter FFmpeg auto-download bugs, feel free to open an issue!**
