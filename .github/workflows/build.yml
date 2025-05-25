@@ -35,10 +35,15 @@ jobs:
     - name: Build executable with PyInstaller (Windows)
       if: runner.os == 'Windows'
       run: |
-        pyinstaller --noconfirm --onefile --add-data "assets;assets" --add-data "langs;langs" main.py
+        pyinstaller --noconfirm --onefile --icon=assets/YouTubeDownloader.ico --add-data "assets;assets" --add-data "langs;langs" main.py
 
-    - name: Build executable with PyInstaller (Linux/Mac)
-      if: runner.os != 'Windows'
+    - name: Build executable with PyInstaller (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        pyinstaller --noconfirm --onefile --windowed --icon=assets/YouTubeDownloader.icns --add-data "assets:assets" --add-data "langs:langs" main.py
+
+    - name: Build executable with PyInstaller (Linux)
+      if: runner.os == 'Linux'
       run: |
         pyinstaller --noconfirm --onefile --add-data "assets:assets" --add-data "langs:langs" main.py
 

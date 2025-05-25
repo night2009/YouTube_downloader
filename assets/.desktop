@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=YouTubeDownloader
+Exec=./main
+Icon=assets/myicon.png
+Terminal=false
+Categories=Utility;

@@ -7,6 +7,7 @@ import threading
 import traceback
 import subprocess
 from io import BytesIO
+import appdirs
 
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
@@ -15,22 +16,24 @@ from PIL import Image, ImageTk
 import requests
 
 APP_NAME = "YouTubeDownloader"
+APP_AUTHOR = "NYCU_SDC_B"
 
 base_path = getattr(sys, '_MEIPASS', os.path.abspath("."))
 
+# 使用 appdirs 取得系統專屬持久化資料夾
+# Use appdirs to get the system-specific persistent data folder
+user_data_dir = appdirs.user_data_dir(APP_NAME, APP_AUTHOR)
+if not os.path.exists(user_data_dir):
+    os.makedirs(user_data_dir)
 
 def ensure_ffmpeg():
     exe_name = "ffmpeg.exe" if os.name == "nt" else "ffmpeg"
-    ffmpeg_path = os.path.join(base_path, "assets", exe_name)
+    ffmpeg_path = os.path.join(user_data_dir, exe_name)
     if not os.path.exists(ffmpeg_path):
         print("FFmpeg not found, process is trying download_ffmpeg.py to get it.")
         try:
-            assets_dir = os.path.join(base_path, "assets")
-            if not os.path.exists(assets_dir):
-                os.makedirs(assets_dir)
-                print("Created assets directory.")
             import download_ffmpeg
-            download_ffmpeg.main()
+            download_ffmpeg.main(download_dir=user_data_dir)
         except Exception as e:
             print(f"Error occurred while downloading FFmpeg: {e}")
             return None
