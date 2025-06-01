@@ -1,73 +1,64 @@
-# core/ffmpeg_helper.py
+from pytubefix import YouTube, Playlist
 
-import os
-import sys
-import urllib.request
-import zipfile
-import platform
-import tempfile
-import shutil
-import traceback
-
-FFMPEG_URLS = {
-    "Windows": "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip",
-    "Darwin": "https://evermeet.cx/ffmpeg/ffmpeg.zip",  # macOS
-    "Linux": "https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz"
-}
-
-def download_and_extract_ffmpeg(target_dir: str) -> str:
+def get_video_info(url):
     """
-    從官方來源下載 FFMPEG 並解壓縮至指定資料夾。
-    返回 ffmpeg 執行檔的完整路徑。
+    回傳影片資訊 dict：包含 title, author, thumbnail_url, resolutions 等
     """
-    system = platform.system()
-    url = FFMPEG_URLS.get(system)
-    if not url:
-        raise Exception(f"FFmpeg automatic download is not supported on {system}")
+    yt = YouTube(url)
+    resolutions = sorted(
+        {s.resolution for s in yt.streams.filter(progressive=True) if s.resolution},
+        key=lambda x: int(x.replace('p','')), reverse=True
+    )
+    return {
+        "title": yt.title,
+        "author": yt.author,
+        "thumbnail_url": yt.thumbnail_url,
+        "resolutions": resolutions
+    }
 
-    print(f"Downloading FFmpeg from {url}")
-    tmp_file = tempfile.NamedTemporaryFile(delete=False, suffix=os.path.basename(url))
-
+def get_playlist_info(url):
+    """ 
+    回傳播放清單資訊 dict，含清單標題、作者、縮圖、影片數量、影片清單。
+    """
     try:
-        urllib.request.urlretrieve(url, tmp_file.name)
-
-        if url.endswith(".zip"):
-            with zipfile.ZipFile(tmp_file.name, 'r') as zip_ref:
-                zip_ref.extractall(target_dir)
-        elif url.endswith(".tar.xz"):
-            shutil.unpack_archive(tmp_file.name, target_dir)
-        else:
-            raise Exception("Unsupported archive format.")
-
-        # 嘗試尋找 ffmpeg 可執行檔
-        for root, _, files in os.walk(target_dir):
-            for file in files:
-                if file.lower() == "ffmpeg.exe" or file == "ffmpeg":
-                    ffmpeg_path = os.path.join(root, file)
-                    final_path = os.path.join(target_dir, os.path.basename(ffmpeg_path))
-                    shutil.copy2(ffmpeg_path, final_path)
-                    print(f"FFmpeg extracted to: {final_path}")
-                    return final_path
-
-        raise FileNotFoundError("FFmpeg executable not found in the archive.")
-
+        pl = Playlist(url)
+        videos = []
+        for v in pl.videos:
+            try:
+                videos.append({
+                    "title": v.title,
+                    "author": v.author,
+                    "thumbnail_url": v.thumbnail_url,
+                    "url": v.watch_url,
+                    "length": v.length,
+                })
+            except Exception:
+                # 遇到失效/私人影片可自訂訊息
+                videos.append({
+                    "title": "(無法取得資訊)",
+                    "author": "",
+                    "thumbnail_url": "",
+                    "url": "",
+                    "length": 0,
+                })
+        # 第一部影片代表整個清單的封面、標題
+        first_video = next((vid for vid in videos if vid["title"] != "(無法取得資訊)"), None)
+        title = first_video["title"] if first_video else ""
+        author = first_video["author"] if first_video else ""
+        thumbnail_url = first_video["thumbnail_url"] if first_video else ""
+        return {
+            "title": title,
+            "author": author,
+            "thumbnail_url": thumbnail_url,
+            "video_count": len(videos),
+            "videos": videos
+        }
     except Exception as e:
-        print("Failed to download or extract FFmpeg:", e)
-        traceback.print_exc()
-        raise
-
-    finally:
-        os.unlink(tmp_file.name)
-
-def ensure_ffmpeg(user_data_dir: str) -> str:
-    """
-    確保 FFmpeg 可用，若不可用則自動下載。
-    返回 FFmpeg 執行檔的路徑。
-    """
-    exe_name = "ffmpeg.exe" if os.name == "nt" else "ffmpeg"
-    ffmpeg_path = os.path.join(user_data_dir, exe_name)
-
-    if not os.path.exists(ffmpeg_path):
-        print("FFmpeg not found, attempting to download...")
-        return download_and_extract_ffmpeg(user_data_dir)
-    return ffmpeg_path
+        return {
+            "title": "",
+            "author": "",
+            "thumbnail_url": "",
+            "video_count": 0,
+            "videos": [],
+            "error": str(e)
+        }
